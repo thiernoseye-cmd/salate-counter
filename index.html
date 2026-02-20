@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salât ʿala Nabi ﷺ — Compteur du Groupe</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Lateef:wght@400;700&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --green:#1a6b4a; --green-light:#2a9068; --green-pale:#e8f5ef; --gold:#c9a24b; --gold-light:#e8c87a; --cream:#fdf8f0; --text:#2d3748; --muted:#718096; --border:#d4e6dc; --shadow:0 4px 24px rgba(26,107,74,0.10); }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Nunito',sans-serif; background:var(--cream); color:var(--text); min-height:100vh; overflow-x:hidden; }
+body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:0; background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(26,107,74,0.08) 0%,transparent 70%),radial-gradient(ellipse 60% 40% at 90% 80%,rgba(201,162,75,0.06) 0%,transparent 60%); }
+.container { max-width:680px; margin:0 auto; padding:2rem 1.2rem 5rem; position:relative; z-index:1; }
+
+.header { text-align:center; margin-bottom:2rem; animation:fadeDown 0.7s ease; }
+.arabic-title { font-family:'Lateef',serif; font-size:2.4rem; color:var(--green); line-height:1.5; margin-bottom:0.2rem; }
+.subtitle { font-family:'Amiri',serif; font-size:1rem; color:var(--gold); margin-bottom:0.6rem; font-style:italic; }
+.desc { font-size:0.85rem; color:var(--muted); }
+.ornament { display:flex; align-items:center; justify-content:center; gap:0.8rem; margin:0.9rem 0; color:var(--gold); }
+.ornament::before { content:''; height:1px; width:60px; background:linear-gradient(90deg,transparent,var(--gold)); }
+.ornament::after  { content:''; height:1px; width:60px; background:linear-gradient(90deg,var(--gold),transparent); }
+
+/* Status */
+.status-bar { display:flex; align-items:center; justify-content:space-between; gap:0.8rem; background:white; border-radius:12px; padding:0.7rem 1rem; margin-bottom:1.2rem; box-shadow:var(--shadow); border:1px solid var(--border); flex-wrap:wrap; font-size:0.8rem; }
+.status-dot { width:8px; height:8px; border-radius:50%; background:#cbd5e0; flex-shrink:0; }
+.status-dot.online { background:#48bb78; box-shadow:0 0 0 3px rgba(72,187,120,0.25); animation:blink 2s infinite; }
+.status-dot.error  { background:#fc8181; }
+.status-text { color:var(--muted); flex:1; }
+.sync-indicator { font-size:0.75rem; color:var(--green); font-weight:600; opacity:0; transition:opacity 0.3s; }
+.sync-indicator.visible { opacity:1; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+/* Total */
+.total-card { background:linear-gradient(135deg,var(--green),var(--green-light)); border-radius:20px; padding:2rem 1.5rem; text-align:center; margin-bottom:1.2rem; box-shadow:0 8px 32px rgba(26,107,74,0.25); position:relative; overflow:hidden; }
+.total-card::before { content:'☪'; position:absolute; right:-10px; top:-10px; font-size:7rem; opacity:0.07; color:white; line-height:1; }
+.total-label { font-size:0.78rem; text-transform:uppercase; letter-spacing:0.15em; color:rgba(255,255,255,0.75); margin-bottom:0.4rem; font-weight:600; }
+.total-number { font-size:3.8rem; font-weight:700; color:white; line-height:1; margin-bottom:0.4rem; font-variant-numeric:tabular-nums; }
+.total-sub { font-size:0.82rem; color:rgba(255,255,255,0.7); }
+.progress-wrap { background:rgba(255,255,255,0.2); border-radius:999px; height:8px; margin:1.1rem 0 0.4rem; overflow:hidden; }
+.progress-bar { height:100%; background:linear-gradient(90deg,var(--gold-light),var(--gold)); border-radius:999px; transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1); min-width:4px; }
+.progress-info { display:flex; justify-content:space-between; font-size:0.73rem; color:rgba(255,255,255,0.65); }
+.today-badge { display:inline-block; background:rgba(255,255,255,0.15); border-radius:999px; padding:0.25rem 0.8rem; font-size:0.75rem; color:rgba(255,255,255,0.9); margin-top:0.6rem; font-weight:600; }
+
+/* Config */
+.config-bar { display:flex; align-items:center; justify-content:space-between; gap:0.8rem; flex-wrap:wrap; background:white; border-radius:12px; padding:0.8rem 1.1rem; margin-bottom:1.2rem; box-shadow:var(--shadow); border:1px solid var(--border); }
+.config-item { display:flex; align-items:center; gap:0.5rem; font-size:0.83rem; color:var(--muted); }
+.config-input { border:1.5px solid var(--border); border-radius:8px; padding:0.3rem 0.6rem; font-size:0.83rem; font-family:'Nunito',sans-serif; font-weight:700; color:var(--green); background:var(--cream); width:90px; outline:none; }
+.config-input:focus { border-color:var(--green-light); }
+.reset-btn { background:none; border:1.5px solid #fc8181; color:#e53e3e; border-radius:8px; padding:0.28rem 0.7rem; font-size:0.76rem; font-family:'Nunito',sans-serif; font-weight:700; cursor:pointer; }
+.reset-btn:hover { background:#fff5f5; }
+.admin-btn { background:none; border:1.5px solid var(--gold); color:#92660a; border-radius:8px; padding:0.28rem 0.7rem; font-size:0.76rem; font-family:'Nunito',sans-serif; font-weight:700; cursor:pointer; transition:background 0.2s; }
+.admin-btn:hover { background:#fef9ec; }
+.admin-btn.active { background:var(--gold); color:white; }
+
+/* Cards */
+.card { background:white; border-radius:16px; padding:1.6rem 1.4rem; box-shadow:var(--shadow); margin-bottom:1.2rem; border:1px solid var(--border); }
+.card-title { font-size:0.95rem; font-weight:700; color:var(--green); margin-bottom:1.1rem; display:flex; align-items:center; gap:0.5rem; }
+.card-title::before { content:''; display:block; width:4px; height:1.1em; border-radius:2px; background:var(--gold); }
+.card-title.green::before { background:var(--green-light); }
+.card-title.blue::before { background:#4299e1; }
+.form-row { display:flex; gap:0.7rem; flex-wrap:wrap; }
+.form-group { display:flex; flex-direction:column; gap:0.35rem; flex:1; min-width:130px; }
+label { font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); }
+input[type="text"],input[type="number"] { border:1.5px solid var(--border); border-radius:10px; padding:0.7rem 0.9rem; font-size:0.95rem; font-family:'Nunito',sans-serif; color:var(--text); background:var(--cream); transition:border-color 0.2s,box-shadow 0.2s; outline:none; width:100%; }
+input:focus { border-color:var(--green-light); box-shadow:0 0 0 3px rgba(42,144,104,0.12); background:white; }
+input[type="number"] { font-weight:700; }
+.btn { margin-top:0.9rem; width:100%; background:linear-gradient(135deg,var(--green),var(--green-light)); color:white; border:none; border-radius:12px; padding:0.85rem 2rem; font-size:0.92rem; font-family:'Nunito',sans-serif; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(26,107,74,0.3); transition:transform 0.15s,box-shadow 0.15s,opacity 0.15s; }
+.btn:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(26,107,74,0.4); }
+.btn:active { transform:translateY(0); }
+.btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+/* Leaderboard */
+.member-list { display:flex; flex-direction:column; gap:0.65rem; }
+.member-item { display:flex; align-items:center; gap:0.75rem; padding:0.7rem 0.9rem; background:var(--cream); border-radius:12px; border:1px solid var(--border); transition:background 0.2s,transform 0.2s; animation:fadeIn 0.4s ease both; }
+.member-item:hover { background:var(--green-pale); transform:translateX(3px); }
+.rank { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; flex-shrink:0; background:var(--border); color:var(--muted); }
+.rank.gold   { background:linear-gradient(135deg,#f6d365,var(--gold)); color:white; }
+.rank.silver { background:linear-gradient(135deg,#d0d0d0,#a0a0a0); color:white; }
+.rank.bronze { background:linear-gradient(135deg,#d4a574,#b5844a); color:white; }
+.member-name { font-weight:600; font-size:0.92rem; color:var(--text); flex:1; }
+.member-bar-wrap { flex:2; background:var(--border); border-radius:999px; height:5px; overflow:hidden; }
+.member-bar { height:100%; background:linear-gradient(90deg,var(--green),var(--green-light)); border-radius:999px; transition:width 0.5s ease; min-width:4px; }
+.member-right { display:flex; flex-direction:column; align-items:flex-end; }
+.member-count { font-weight:700; font-size:0.88rem; color:var(--green); min-width:58px; text-align:right; font-variant-numeric:tabular-nums; }
+.member-pct { font-size:0.68rem; color:var(--muted); }
+.empty-state { text-align:center; padding:2rem; color:var(--muted); font-size:0.88rem; }
+.empty-state .icon { font-size:2.2rem; display:block; margin-bottom:0.5rem; }
+
+/* Historique */
+.history-item { display:flex; align-items:center; gap:0.8rem; padding:0.8rem 1rem; background:var(--cream); border-radius:12px; border:1px solid var(--border); margin-bottom:0.6rem; animation:fadeIn 0.4s ease both; }
+.history-item.today { background:var(--green-pale); border-color:var(--green-light); }
+.history-date { font-weight:700; font-size:0.82rem; color:var(--text); min-width:90px; }
+.history-date .day-label { font-size:0.68rem; color:var(--muted); font-weight:400; display:block; }
+.history-total { font-weight:800; font-size:1.1rem; color:var(--green); margin-left:auto; font-variant-numeric:tabular-nums; }
+.history-bar-wrap { flex:1; background:var(--border); border-radius:999px; height:5px; overflow:hidden; min-width:60px; }
+.history-bar { height:100%; background:linear-gradient(90deg,var(--green),var(--green-light)); border-radius:999px; min-width:4px; }
+.history-badge { font-size:0.68rem; background:var(--green); color:white; border-radius:999px; padding:0.15rem 0.5rem; font-weight:700; }
+.history-badge.gold { background:var(--gold); }
+.history-members { font-size:0.72rem; color:var(--muted); min-width:70px; text-align:right; }
+
+/* Toast */
+.toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(100px); background:var(--green); color:white; padding:0.75rem 1.4rem; border-radius:100px; font-size:0.88rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.2); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1); z-index:100; white-space:nowrap; max-width:92vw; text-align:center; }
+.toast.show { transform:translateX(-50%) translateY(0); }
+
+@keyframes fadeDown { from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn   { from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)} }
+@keyframes pulse    { 0%,100%{transform:scale(1)}50%{transform:scale(1.07)} }
+.number-pulse { animation:pulse 0.4s ease; }
+/* Collapsible */
+.card-toggle { cursor:pointer; user-select:none; }
+.card-toggle:hover { opacity:0.85; }
+.toggle-arrow { font-size:0.85rem; transition:transform 0.3s; display:inline-block; margin-left:auto; }
+.toggle-arrow.open { transform:rotate(180deg); }
+.collapsible-content { display:none; }
+.collapsible-content.open { display:block; }
+
+/* Rappel */
+.rappel-card { background:white; border-radius:16px; padding:1.6rem 1.4rem; box-shadow:var(--shadow); margin-bottom:1.2rem; border:1px solid var(--border); }
+.rappel-row { display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; margin-bottom:0.8rem; }
+.rappel-row input[type="time"] { border:1.5px solid var(--border); border-radius:10px; padding:0.6rem 0.9rem; font-size:0.95rem; font-family:'Nunito',sans-serif; font-weight:700; color:var(--text); background:var(--cream); outline:none; width:130px; }
+.rappel-row input[type="time"]:focus { border-color:var(--green-light); box-shadow:0 0 0 3px rgba(42,144,104,0.12); background:white; }
+.toggle-btn { display:flex; align-items:center; gap:0.6rem; cursor:pointer; flex:1; background:var(--cream); border-radius:10px; padding:0.6rem 0.9rem; border:1px solid var(--border); transition:background 0.2s; }
+.toggle-btn:hover { background:var(--green-pale); }
+.toggle-pill { width:38px; height:22px; border-radius:999px; background:#cbd5e0; position:relative; flex-shrink:0; transition:background 0.2s; }
+.toggle-pill::after { content:''; position:absolute; width:16px; height:16px; background:white; border-radius:50%; top:3px; left:3px; transition:transform 0.25s; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+.toggle-pill.on { background:var(--green); }
+.toggle-pill.on::after { transform:translateX(16px); }
+.toggle-pill-text { font-size:0.85rem; font-weight:700; color:var(--text); }
+.rappel-desc { font-size:0.78rem; color:var(--muted); line-height:1.5; }
+/* Alarme visuelle */
+.alarm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center; animation:fadeOverlay 0.3s ease; }
+.alarm-overlay.show { display:flex; }
+.alarm-box { background:white; border-radius:24px; padding:2.5rem 2rem; text-align:center; max-width:320px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:alarmPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.alarm-icon { font-size:4rem; display:block; margin-bottom:1rem; animation:alarmBell 0.5s ease infinite alternate; }
+.alarm-title { font-family:'Lateef',serif; font-size:1.6rem; color:var(--green); margin-bottom:0.5rem; }
+.alarm-text { font-size:0.9rem; color:var(--muted); margin-bottom:1.5rem; line-height:1.6; }
+.alarm-close { background:linear-gradient(135deg,var(--green),var(--green-light)); color:white; border:none; border-radius:12px; padding:0.85rem 2rem; font-size:0.95rem; font-family:'Nunito',sans-serif; font-weight:700; cursor:pointer; width:100%; box-shadow:0 4px 16px rgba(26,107,74,0.3); }
+@keyframes alarmBell { from{transform:rotate(-15deg)} to{transform:rotate(15deg)} }
+@keyframes alarmPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+@keyframes fadeOverlay { from{opacity:0} to{opacity:1} }
+
+
+/* Visibility toggle */
+.visibility-toggle { margin-top:0.9rem; padding:0.7rem 0.9rem; background:var(--cream); border-radius:10px; border:1px solid var(--border); }
+.toggle-label { display:flex; align-items:center; gap:0.7rem; cursor:pointer; }
+.toggle-label input[type="checkbox"] { display:none; }
+.toggle-slider { width:36px; height:20px; background:#cbd5e0; border-radius:999px; position:relative; flex-shrink:0; transition:background 0.2s; }
+.toggle-slider::after { content:''; position:absolute; width:14px; height:14px; background:white; border-radius:50%; top:3px; left:3px; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+.toggle-label input:checked + .toggle-slider { background:var(--green); }
+.toggle-label input:checked + .toggle-slider::after { transform:translateX(16px); }
+.toggle-text { font-size:0.85rem; color:var(--text); font-weight:600; }
+.toggle-hint { font-size:0.72rem; color:var(--muted); margin-top:0.3rem; display:block; }
+
+.arabic-title { cursor:default; transition:opacity 0.2s; }
+.arabic-title.editable { cursor:pointer; border-bottom:2px dashed var(--gold); padding-bottom:0.2rem; }
+.arabic-title.editable:hover { opacity:0.75; }
+.edit-hint { font-size:0.7rem; color:var(--gold); margin-top:0.2rem; display:none; }
+.edit-hint.visible { display:block; }
+
+/* Dual cards */
+.dual-cards { display:flex; gap:1rem; margin-bottom:1rem; }
+.dual-cards .total-card { flex:1; margin-bottom:0; }
+.total-card-global { background:linear-gradient(135deg,#1a3a5c,#2a5a8c) !important; }
+.total-card-global::before { content:'∑' !important; }
+.total-card-day { font-size:0.9em; }
+.progress-card { background:white; border-radius:16px; padding:1.2rem 1.4rem; box-shadow:var(--shadow); margin-bottom:1.2rem; border:1px solid var(--border); }
+.prog-info { display:flex; justify-content:space-between; font-size:0.82rem; color:var(--muted); margin-bottom:0.6rem; font-weight:600; }
+.prog-goal { font-size:0.75rem; color:var(--muted); margin-top:0.4rem; text-align:right; }
+.progress-wrap { background:#e2e8f0; border-radius:999px; height:8px; overflow:hidden; }
+.progress-bar { height:100%; background:linear-gradient(90deg,var(--gold-light),var(--gold)); border-radius:999px; transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1); min-width:4px; }
+@media(max-width:480px){ .dual-cards { flex-direction:column; } }
+
+@media(max-width:480px){ .arabic-title{font-size:2rem} .total-number{font-size:3rem} .form-row{flex-direction:column} .member-bar-wrap{display:none} .history-bar-wrap{display:none} }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="arabic-title" id="arabicTitle" onclick="editArabicTitle()">اللَّهُمَّ صَلِّ عَلَىٰ سَيِّدِنَا مُحَمَّدٍ وَسَلِّمْ</div>
+    <div id="arabicEditArea" style="display:none;margin-top:0.5rem;">
+      <input type="text" id="arabicInput" dir="rtl" style="width:100%;font-family:'Lateef',serif;font-size:1.4rem;text-align:center;border:2px solid var(--gold);border-radius:10px;padding:0.5rem 1rem;background:white;outline:none;color:var(--green);" />
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;justify-content:center;">
+        <button onclick="saveArabicTitle()" style="background:var(--green);color:white;border:none;border-radius:8px;padding:0.4rem 1.2rem;font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;">✓ Sauvegarder</button>
+        <button onclick="cancelArabicEdit()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:0.4rem 1rem;font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;color:var(--muted);">Annuler</button>
+      </div>
+    </div>
+    <div class="subtitle">Salât ʿala Nabi ﷺ — Compteur du Groupe</div>
+    <div class="ornament"><span>✦</span></div>
+    <div class="desc">Ensemble, célébrons le Prophète ﷺ et atteignons nos objectifs</div>
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    <div style="display:flex;align-items:center;gap:0.5rem;flex:1">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">Connexion…</span>
+    </div>
+    <span class="sync-indicator" id="syncIndicator">↻ sync</span>
+  </div>
+
+  <div id="mainContent">
+
+    <!-- Deux totaux -->
+    <div class="dual-cards">
+      <!-- Total global toutes périodes -->
+      <div class="total-card total-card-global">
+        <div class="total-label">Total depuis le début</div>
+        <div class="total-number" id="totalGlobalDisplay">0</div>
+        <div class="total-sub" id="globalSubDisplay">tous les jours</div>
+      </div>
+      <!-- Total du jour -->
+      <div class="total-card total-card-day">
+        <div class="total-label">Aujourd'hui</div>
+        <div class="total-number" id="totalDisplay">0</div>
+        <div class="today-badge" id="todayBadge">📅 —</div>
+      </div>
+    </div>
+    <!-- Progression du jour -->
+    <div class="progress-card">
+      <div class="progress-card-inner">
+        <div class="prog-info">
+          <span id="memberCountDisplay">0 membre(s) — 0 contribution(s)</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+        <div class="prog-goal" id="goalDisplay">Objectif du jour : 0</div>
+      </div>
+    </div>
+
+    <!-- Config admin -->
+    <div class="config-bar">
+      <div class="config-item">
+        🎯 Objectif / personne :
+        <input type="number" class="config-input" id="goalInput" min="1" value="1000" oninput="debouncedSave()" readonly>
+      </div>
+      <button class="reset-btn" onclick="demanderAdmin(confirmReset)">🗑 Réinitialiser</button>
+      <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">🔐 Admin</button>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="card">
+      <div class="card-title">Ajouter ma contribution</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Ton prénom <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(facultatif)</span></label>
+          <input type="text" id="nameInput" placeholder="Laisser vide = Sope Nabi" autocomplete="given-name">
+        </div>
+        <div class="form-group">
+          <label>Nombre de Salât</label>
+          <input type="number" id="countInput" placeholder="100" min="1" max="1000000">
+        </div>
+      </div>
+      <div class="visibility-toggle">
+        <label class="toggle-label">
+          <input type="checkbox" id="anonymeCheck">
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">Contribution <b id="toggleText">visible</b> par le groupe</span>
+        </label>
+        <span class="toggle-hint" id="toggleHint">Ton total apparaît dans le classement</span>
+      </div>
+      <button class="btn" id="submitBtn" onclick="addContribution()">Soumettre ﷺ</button>
+    </div>
+
+    <!-- Classement du jour -->
+    <div class="card">
+      <div class="card-title green card-toggle" onclick="toggleSection('memberList','arrowMember')">
+        <div class="card-title-left">Classement du jour</div>
+        <span class="toggle-arrow" id="arrowMember">▼</span>
+      </div>
+      <div class="collapsible-content member-list" id="memberList">
+        <div class="empty-state"><span class="icon">☪️</span>Aucune contribution encore.<br>Sois le premier à participer !</div>
+      </div>
+    </div>
+
+    <!-- Historique -->
+    <div class="card">
+      <div class="card-title blue card-toggle" onclick="toggleSection('historyList','arrowHistory')">
+        <div class="card-title-left">📅 Historique des jours</div>
+        <span class="toggle-arrow" id="arrowHistory">▼</span>
+      </div>
+      <div class="collapsible-content" id="historyList">
+        <div class="empty-state"><span class="icon">📊</span>L'historique apparaîtra ici<br>au fil des jours.</div>
+      </div>
+    </div>
+
+    <!-- Rappel quotidien -->
+    <div class="rappel-card" id="rappelCard">
+      <div style="font-size:0.95rem;font-weight:700;color:var(--green);margin-bottom:1.1rem;display:flex;align-items:center;gap:0.5rem;">
+        <span style="display:block;width:4px;height:1.1em;border-radius:2px;background:var(--gold);flex-shrink:0;"></span>
+        🔔 Rappel quotidien
+      </div>
+      <div class="rappel-row">
+        <input type="time" id="rappelTime" value="08:00" onchange="saveRappel()">
+        <div class="toggle-btn" onclick="toggleRappel()">
+          <div class="toggle-pill" id="rappelPill"></div>
+          <span class="toggle-pill-text" id="rappelPillText">Rappel désactivé</span>
+        </div>
+      </div>
+      <div class="rappel-desc">⚠️ La page doit rester ouverte pour recevoir le rappel.</div>
+    </div>
+
+    <!-- Alarme overlay -->
+    <div class="alarm-overlay" id="alarmOverlay">
+      <div class="alarm-box">
+        <span class="alarm-icon">🔔</span>
+        <div class="alarm-title">اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ</div>
+        <div class="alarm-text">C'est l'heure de tes Salât ʿala Nabi ﷺ<br>Le groupe t'attend aujourd'hui 🤲</div>
+        <button class="alarm-close" onclick="fermerAlarme()">Je soumets mes Salât ﷺ</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const FB_URL        = 'https://salat-f6e3e-default-rtdb.firebaseio.com';
+const FIXED_GROUP   = 'SALAT-GROUPE';
+const ADMIN_PASSWORD = 'G_SALATOU';
+
+// state du jour courant
+let state = { members:{}, contributions:0, goal:1000 };
+// historique : { "2026-02-20": { total:10000, members:{}, contributions:50 }, ... }
+let history = {};
+
+let groupId    = FIXED_GROUP;
+let pollTimer  = null;
+let saveTimer  = null;
+let isSaving   = false;
+let adminUnlocked = false;
+
+// ── Date helpers ──────────────────────────────────────────────
+function todayKey() {
+  const d = new Date();
+  return d.toISOString().slice(0,10); // "2026-02-20"
+}
+
+function formatDate(key) {
+  const [y,m,d] = key.split('-');
+  const days = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const dt = new Date(y, m-1, d);
+  return { short: `${d}/${m}/${y}`, day: days[dt.getDay()] };
+}
+
+// ── Init ──────────────────────────────────────────────────────
+window.onload = () => {
+  initRappel();
+  setStatus('loading','Connexion…');
+  fetchAll().then(ok => {
+    if (ok) {
+      showMainUI();
+      setStatus('online','Synchronisé en temps réel');
+      startPolling();
+    } else {
+      // première fois : initialiser
+      pushAll().then(() => {
+        showMainUI();
+        setStatus('online','Groupe initialisé');
+        startPolling();
+      });
+    }
+  });
+};
+
+// ── Firebase ──────────────────────────────────────────────────
+async function fetchAll() {
+  try {
+    const res = await fetch(`${FB_URL}/groupes/${groupId}.json`);
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    if (!data) return true;
+
+    const today = todayKey();
+
+    // Charger le state du jour
+    if (data.days && data.days[today]) {
+      const d = data.days[today];
+      let changed = false;
+      for (const [name, count] of Object.entries(d.members || {})) {
+        if (count > (state.members[name]||0)) { state.members[name]=count; changed=true; }
+      }
+      if ((d.contributions||0) > state.contributions) { state.contributions=d.contributions; changed=true; }
+      if (changed) render();
+    }
+
+    // Charger l'historique (tous les jours sauf aujourd'hui)
+    if (data.days) {
+      history = {};
+      for (const [k,v] of Object.entries(data.days)) {
+        if (k !== today) history[k] = v;
+      }
+      renderHistory();
+    }
+
+    // Objectif global
+    if (data.goal && data.goal !== state.goal) {
+      state.goal = data.goal;
+      const gi = document.getElementById('goalInput');
+      if (gi) gi.value = state.goal;
+      render();
+    }
+
+    // Charger le titre arabe
+    if (data.arabicTitle) {
+      document.getElementById('arabicTitle').textContent = data.arabicTitle;
+    }
+    setStatus('online','Synchronisé · '+heure());
+    flashSync();
+    return true;
+  } catch(e) {
+    setStatus('error','Erreur réseau…');
+    return false;
+  }
+}
+
+async function pushAll() {
+  if (isSaving) return true;
+  isSaving = true;
+  flashSync();
+  try {
+    const today = todayKey();
+    // Construire le payload complet
+    const payload = {
+      goal: state.goal,
+      days: { ...history, [today]: { members: state.members, contributions: state.contributions, total: totalDu(state.members) } }
+    };
+    const res = await fetch(`${FB_URL}/groupes/${groupId}.json`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(res.status);
+    setStatus('online','Synchronisé · '+heure());
+    return true;
+  } catch(e) {
+    setStatus('error','Erreur de sauvegarde');
+    showToast('❌ Erreur réseau — vérifie ta connexion');
+    return false;
+  } finally { isSaving = false; }
+}
+
+function totalDu(members) {
+  return Object.values(members).reduce((a,b)=>a+b,0);
+}
+
+function startPolling() {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(fetchAll, 3000);
+}
+
+function debouncedSave() {
+  state.goal = parseInt(document.getElementById('goalInput').value)||1000;
+  render();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushAll, 1000);
+}
+
+// ── Actions ───────────────────────────────────────────────────
+async function addContribution() {
+  const nameEl  = document.getElementById('nameInput');
+  const countEl = document.getElementById('countInput');
+  const rawName = nameEl.value.trim();
+  const name    = rawName || 'Sope Nabi';
+  const count   = parseInt(countEl.value);
+  const anonyme = document.getElementById('anonymeCheck').checked;
+
+  if (!count||count<1){ showToast('⚠️ Entre un nombre valide'); countEl.focus(); return; }
+
+  if (anonyme) {
+    // Contribution anonyme : on ajoute au total global sans nom visible
+    state.contributions++;
+    state.anonymeTotal = (state.anonymeTotal||0) + count;
+    // On stocke quand même dans un bucket anonyme pour le total
+    state.members['🕌 Anonyme'] = (state.members['🕌 Anonyme']||0) + count;
+  } else {
+    state.members[name] = (state.members[name]||0) + count;
+    state.contributions++;
+  }
+
+  state.goal = parseInt(document.getElementById('goalInput').value)||1000;
+  render();
+  const displayName = anonyme ? 'Anonyme' : name;
+  showToast(`🌿 +${count.toLocaleString('fr-FR')} pour ${displayName} — BarakAllahu fik !`);
+  countEl.value = '';
+  nameEl.focus();
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  await pushAll();
+  btn.disabled = false;
+}
+
+async function confirmReset() {
+  if (!confirm('Réinitialiser la journée en cours ? L\'historique des jours précédents sera conservé.')) return;
+  // Sauvegarder d'abord le jour actuel dans l'historique si non vide
+  const today = todayKey();
+  const total = totalDu(state.members);
+  if (total > 0) {
+    history[today] = { members:{...state.members}, contributions:state.contributions, total };
+  }
+  state = { members:{}, contributions:0, goal: parseInt(document.getElementById('goalInput').value)||1000 };
+  render();
+  renderHistory();
+  await pushAll();
+  showToast('✅ Journée réinitialisée — bonne continuation !');
+}
+
+// ── Render jour ───────────────────────────────────────────────
+function showMainUI() {
+  document.getElementById('goalInput').value = state.goal;
+  render();
+  renderHistory();
+}
+
+function render() {
+  const total       = totalDu(state.members);
+  const memberCount = Object.keys(state.members).length;
+  const totalGoal   = state.goal * Math.max(memberCount,1);
+  const pct         = totalGoal>0 ? Math.min(100,Math.round((total/totalGoal)*100)) : 0;
+  const today       = todayKey();
+  const {short,day} = formatDate(today);
+
+  // Total global = aujourd'hui + historique
+  const histTotal = Object.values(history).reduce((sum, d) => sum + (d.total || totalDu(d.members||{})), 0);
+  const grandTotal = total + histTotal;
+  const nbJours = Object.keys(history).length + (total > 0 ? 1 : 0);
+
+  const elG = document.getElementById('totalGlobalDisplay');
+  if (elG) {
+    elG.textContent = grandTotal.toLocaleString('fr-FR');
+    elG.classList.remove('number-pulse'); void elG.offsetWidth; elG.classList.add('number-pulse');
+  }
+  const gs = document.getElementById('globalSubDisplay');
+  if (gs) gs.textContent = nbJours <= 1 ? 'depuis aujourd\'hui' : `sur ${nbJours} jours`;
+
+  const el = document.getElementById('totalDisplay');
+  el.textContent = total.toLocaleString('fr-FR');
+  el.classList.remove('number-pulse'); void el.offsetWidth; el.classList.add('number-pulse');
+
+  document.getElementById('todayBadge').textContent = `📅 ${day} ${short}`;
+  document.getElementById('memberCountDisplay').textContent = `${memberCount} membre(s) — ${state.contributions} contribution(s)`;
+  document.getElementById('progressBar').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = pct+'%';
+  document.getElementById('goalDisplay').textContent = `Objectif : ${totalGoal.toLocaleString('fr-FR')}`;
+
+  const list   = document.getElementById('memberList');
+  const sorted = Object.entries(state.members).sort((a,b)=>b[1]-a[1]);
+  const max    = sorted[0]?.[1]||1;
+
+  if (!sorted.length) {
+    list.innerHTML = `<div class="empty-state"><span class="icon">☪️</span>Aucune contribution encore.<br>Sois le premier à participer !</div>`;
+    return;
+  }
+  list.innerHTML = sorted.map(([name,count],i) => {
+    const rc = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const bp = Math.max(4,Math.round((count/max)*100));
+    const pg = Math.min(100,Math.round((count/state.goal)*100));
+    return `<div class="member-item" style="animation-delay:${i*0.05}s">
+      <div class="rank ${rc}">${i+1}</div>
+      <div class="member-name">${esc(name)}</div>
+      <div class="member-bar-wrap"><div class="member-bar" style="width:${bp}%"></div></div>
+      <div class="member-right">
+        <div class="member-count">${count.toLocaleString('fr-FR')}</div>
+        <div class="member-pct">${pg}% objectif</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render historique ─────────────────────────────────────────
+function renderHistory() {
+  const container = document.getElementById('historyList');
+  const entries   = Object.entries(history).sort((a,b)=>b[0].localeCompare(a[0])); // plus récent en premier
+
+  if (!entries.length) {
+    container.innerHTML = `<div class="empty-state"><span class="icon">📊</span>L'historique apparaîtra ici<br>au fil des jours.</div>`;
+    return;
+  }
+
+  // Trouver le max pour les barres
+  const maxTotal = Math.max(...entries.map(([,v])=>v.total||0), 1);
+
+  container.innerHTML = entries.map(([key,val],i) => {
+    const {short,day} = formatDate(key);
+    const total     = val.total || totalDu(val.members||{});
+    const nbMembers = Object.keys(val.members||{}).length;
+    const bp        = Math.max(4, Math.round((total/maxTotal)*100));
+
+    // Badge objectif atteint ?
+    const totalGoal = state.goal * Math.max(nbMembers,1);
+    const atteint   = total >= totalGoal;
+    const badge     = atteint
+      ? `<span class="history-badge gold">✓ Objectif</span>`
+      : `<span class="history-badge">${Math.round((total/Math.max(totalGoal,1))*100)}%</span>`;
+
+    return `<div class="history-item" style="animation-delay:${i*0.04}s">
+      <div class="history-date">
+        ${short}
+        <span class="day-label">${day}</span>
+      </div>
+      <div class="history-bar-wrap"><div class="history-bar" style="width:${bp}%"></div></div>
+      <div class="history-members">${nbMembers} mbr.</div>
+      ${badge}
+      <div class="history-total">${total.toLocaleString('fr-FR')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function setStatus(type,msg) {
+  document.getElementById('statusDot').className = 'status-dot'+(type==='online'?' online':type==='error'?' error':'');
+  document.getElementById('statusText').textContent = msg;
+}
+function flashSync() {
+  const el = document.getElementById('syncIndicator');
+  el.classList.add('visible');
+  setTimeout(()=>el.classList.remove('visible'),2000);
+}
+function heure() {
+  return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+}
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3800);
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter') addContribution();
+});
+
+
+
+// ── Toggle visibilité ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const check = document.getElementById('anonymeCheck');
+  if (check) {
+    check.addEventListener('change', () => {
+      const anon = check.checked;
+      document.getElementById('toggleText').textContent = anon ? 'anonyme' : 'visible';
+      document.getElementById('toggleText').style.color = anon ? 'var(--muted)' : 'var(--green)';
+      document.getElementById('toggleHint').textContent = anon
+        ? 'Ton nom n\'apparaîtra pas dans le classement'
+        : 'Ton total apparaît dans le classement';
+    });
+  }
+});
+
+
+
+// ── Sections repliables ───────────────────────────────────────
+function toggleSection(contentId, arrowId) {
+  const content = document.getElementById(contentId);
+  const arrow   = document.getElementById(arrowId);
+  const isOpen  = content.classList.contains('open');
+  content.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+}
+
+// ── Rappel quotidien (alarme visuelle — aucune permission requise) ──
+let rappelActif = localStorage.getItem('salat-rappel') === 'true';
+let rappelHeure = localStorage.getItem('salat-rappel-heure') || '08:00';
+let rappelTimer = null;
+let alarmeCtx   = null;
+
+function initRappel() {
+  document.getElementById('rappelTime').value = rappelHeure;
+  updateRappelUI();
+  if (rappelActif) scheduleAlarme();
+}
+
+function toggleRappel() {
+  rappelActif = !rappelActif;
+  localStorage.setItem('salat-rappel', rappelActif);
+  updateRappelUI();
+  if (rappelActif) {
+    scheduleAlarme();
+    showToast('🔔 Rappel activé à ' + rappelHeure);
+  } else {
+    clearTimeout(rappelTimer);
+    showToast('🔕 Rappel désactivé');
+  }
+}
+
+function saveRappel() {
+  rappelHeure = document.getElementById('rappelTime').value;
+  localStorage.setItem('salat-rappel-heure', rappelHeure);
+  if (rappelActif) {
+    clearTimeout(rappelTimer);
+    scheduleAlarme();
+    showToast('🔔 Rappel mis à jour à ' + rappelHeure);
+  }
+  updateRappelUI();
+}
+
+function updateRappelUI() {
+  const pill = document.getElementById('rappelPill');
+  const txt  = document.getElementById('rappelPillText');
+  if (!pill) return;
+  if (rappelActif) {
+    pill.classList.add('on');
+    txt.textContent = '✅ Rappel activé à ' + rappelHeure;
+    txt.style.color = 'var(--green)';
+  } else {
+    pill.classList.remove('on');
+    txt.textContent = 'Rappel désactivé';
+    txt.style.color = 'var(--text)';
+  }
+}
+
+function scheduleAlarme() {
+  if (!rappelActif) return;
+  clearTimeout(rappelTimer);
+  const [h, m] = rappelHeure.split(':').map(Number);
+  const now  = new Date();
+  const next = new Date();
+  next.setHours(h, m, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  const ms = next - now;
+  rappelTimer = setTimeout(() => {
+    afficherAlarme();
+    scheduleAlarme(); // replanifier pour le lendemain
+  }, ms);
+}
+
+function afficherAlarme() {
+  jouerSon();
+  document.getElementById('alarmOverlay').classList.add('show');
+  // Faire vibrer si disponible
+  if (navigator.vibrate) navigator.vibrate([400,200,400,200,400]);
+}
+
+function fermerAlarme() {
+  document.getElementById('alarmOverlay').classList.remove('show');
+  if (alarmeCtx) { alarmeCtx.close(); alarmeCtx = null; }
+  // Scroll vers le formulaire
+  document.getElementById('nameInput').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('countInput').focus();
+}
+
+function jouerSon() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    alarmeCtx = ctx;
+    const notes = [523, 659, 784, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i*0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.18 + 0.15);
+      osc.start(ctx.currentTime + i*0.18);
+      osc.stop(ctx.currentTime + i*0.18 + 0.15);
+    });
+  } catch(e) {}
+}
+
+// ── Titre arabe modifiable ────────────────────────────────────
+function editArabicTitle() {
+  if (!adminUnlocked) return; // silencieux si pas admin
+  const current = document.getElementById('arabicTitle').textContent.trim();
+  document.getElementById('arabicInput').value = current;
+  document.getElementById('arabicTitle').style.display = 'none';
+  document.getElementById('arabicEditArea').style.display = 'block';
+  document.getElementById('arabicInput').focus();
+}
+
+async function saveArabicTitle() {
+  const val = document.getElementById('arabicInput').value.trim();
+  if (!val) { showToast('⚠️ Le texte ne peut pas être vide'); return; }
+  document.getElementById('arabicTitle').textContent = val;
+  document.getElementById('arabicTitle').style.display = 'block';
+  document.getElementById('arabicEditArea').style.display = 'none';
+  // Sauvegarder dans Firebase
+  try {
+    await fetch(`${FB_URL}/groupes/${groupId}/arabicTitle.json`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(val)
+    });
+    showToast('✅ Texte arabe mis à jour pour tout le groupe');
+  } catch(e) { showToast('❌ Erreur lors de la sauvegarde'); }
+}
+
+function cancelArabicEdit() {
+  document.getElementById('arabicTitle').style.display = 'block';
+  document.getElementById('arabicEditArea').style.display = 'none';
+}
+
+// ── Admin ─────────────────────────────────────────────────────
+function toggleAdmin() {
+  if (adminUnlocked) {
+    adminUnlocked = false;
+    document.getElementById('adminBtn').textContent = '🔐 Admin';
+    document.getElementById('adminBtn').classList.remove('active');
+    document.getElementById('goalInput').setAttribute('readonly',true);
+    showToast('🔒 Mode admin désactivé');
+    document.getElementById('arabicTitle').classList.remove('editable');
+    document.getElementById('arabicTitle').title = '';
+  } else {
+    const pwd = prompt('🔐 Mot de passe administrateur :');
+    if (pwd===ADMIN_PASSWORD) {
+      adminUnlocked=true;
+      document.getElementById('adminBtn').textContent='🔓 Admin';
+      document.getElementById('adminBtn').classList.add('active');
+      document.getElementById('goalInput').removeAttribute('readonly');
+      showToast('✅ Mode admin activé');
+      document.getElementById('arabicTitle').classList.add('editable');
+      document.getElementById('arabicTitle').title = 'Cliquer pour modifier';
+    } else if (pwd!==null) {
+      showToast('❌ Mot de passe incorrect');
+    }
+  }
+}
+function demanderAdmin(action) {
+  if (adminUnlocked) { action(); return; }
+  const pwd = prompt('🔐 Mot de passe administrateur :');
+  if (pwd===ADMIN_PASSWORD) action();
+  else if (pwd!==null) showToast('❌ Mot de passe incorrect');
+}
+</script>
+</body>
+</html>
